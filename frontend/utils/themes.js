@@ -1,0 +1,43 @@
+const base = {
+  success: "#34D399",
+  danger: "#F87171",
+  warning: "#FBBF24",
+  info: "#38BDF8",
+};
+
+export const themes = {
+  dark: {
+    ...base,
+    background: "#05060D",
+    card: "#0E1425",
+    cardElevated: "#16213F",
+    text: "#F8FAFF",
+    primary: "#7C3AED",
+    accent: "#F472B6",
+    border: "#1F2A44",
+    secondaryText: "#A0AEC0",
+    muted: "#273152",
+    chip: "rgba(124,58,237,0.13)",
+    buttonBackground: "#7C3AED",
+    buttonText: "#F8FAFF",
+    inputBackground: "#101C3B",
+    modalBackground: "#0B1120",
+  },
+  light: {
+    ...base,
+    background: "#F4F5FB",
+    card: "#FFFFFF",
+    cardElevated: "#EEF1FF",
+    text: "#0F172A",
+    primary: "#6D28D9",
+    accent: "#E11D48",
+    border: "#E2E8F0",
+    secondaryText: "#475569",
+    muted: "#CBD5F5",
+    chip: "rgba(109,40,217,0.14)",
+    buttonBackground: "#6D28D9",
+    buttonText: "#FFFFFF",
+    inputBackground: "#F8FAFF",
+    modalBackground: "#FFFFFF",
+  },
+};
