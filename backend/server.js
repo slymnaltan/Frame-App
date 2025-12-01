@@ -11,6 +11,7 @@ const paymentRoutes = require("./routes/payment");
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Form-data için
 app.use(cors());
 
 // MongoDB bağlantısı

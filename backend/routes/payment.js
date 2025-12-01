@@ -172,7 +172,12 @@ router.post("/initialize", auth, async (req, res) => {
 // Ödeme callback
 router.post("/callback", async (req, res) => {
   try {
-    const { token } = req.body;
+    // İyzico token'ı query, body veya form-data olarak gönderebilir
+    const token = req.body.token || req.query.token;
+
+    console.log("Callback received - body:", req.body);
+    console.log("Callback received - query:", req.query);
+    console.log("Token:", token);
 
     if (!token) {
       return res.status(400).send("Token bulunamadı");
