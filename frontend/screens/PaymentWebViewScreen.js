@@ -40,7 +40,7 @@ const PaymentWebViewScreen = ({ route, navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Home'),
+              onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
             },
           ]
         );
