@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { themes } from '../utils/themes';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.43.117:5000/api';
+const API_URL = 'https://frame-app.onrender.com/api';
 
 const CreateEventScreen = ({ navigation }) => {
   const currentTheme = useSelector((state) => state.theme.theme);

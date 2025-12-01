@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
@@ -21,6 +22,15 @@ mongoose.connect(process.env.MONGO_URI)
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+// Payment callback pages
+app.get("/payment-success", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "payment-success.html"));
+});
+
+app.get("/payment-failed", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "payment-failed.html"));
 });
 
 app.use("/api/auth", authRoutes);

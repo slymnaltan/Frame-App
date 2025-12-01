@@ -196,9 +196,7 @@ router.post("/callback", async (req, res) => {
       await payment.save();
 
       // Başarılı ödeme sayfasına yönlendir
-      return res.redirect(
-        `${process.env.FRONTEND_URL || "exp://192.168.43.117:8081"}/payment-success?token=${token}`
-      );
+      return res.redirect(`/payment-success?token=${token}`);
     } else {
       // Ödeme başarısız
       payment.status = "failed";
@@ -206,9 +204,7 @@ router.post("/callback", async (req, res) => {
       payment.paymentDetails = result;
       await payment.save();
 
-      return res.redirect(
-        `${process.env.FRONTEND_URL || "exp://192.168.43.117:8081"}/payment-failed?token=${token}`
-      );
+      return res.redirect(`/payment-failed?token=${token}`);
     }
   } catch (error) {
     console.error("Payment callback error:", error);
@@ -279,7 +275,7 @@ router.post("/complete-event", auth, async (req, res) => {
     const crypto = require("crypto");
 
     const uploadSlug = crypto.randomBytes(5).toString("hex");
-    const uploadUrl = `${process.env.UPLOAD_BASE_URL || "https://memory-app/upload"}/${uploadSlug}`;
+    const uploadUrl = `${process.env.UPLOAD_BASE_URL}/${uploadSlug}`;
     const qrCodeImage = await QRCode.toDataURL(uploadUrl);
     const qrCodeId = crypto.randomUUID();
 

@@ -7,8 +7,7 @@ const Event = require("../models/Event");
 
 const router = express.Router();
 
-const UPLOAD_BASE_URL =
-  process.env.UPLOAD_BASE_URL || "https://memory-app/upload";
+const UPLOAD_BASE_URL = process.env.UPLOAD_BASE_URL;
 
 function buildSlug() {
   return crypto.randomBytes(5).toString("hex");

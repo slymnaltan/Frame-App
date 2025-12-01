@@ -5,7 +5,7 @@ import SuccessView from "../sections/SuccessView";
 import UploadForm from "../sections/UploadForm";
 import WelcomeView from "../sections/WelcomeView";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://frame-app.onrender.com/api";
 
 const App = () => {
   const { slug } = useParams();
