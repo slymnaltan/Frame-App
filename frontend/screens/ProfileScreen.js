@@ -15,9 +15,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { themes } from "../utils/themes";
 import { translations } from "../utils/translations";
-import { setTheme } from "../redux/slice/themeSlice";
-import { setLanguage } from "../redux/slice/languageSlice";
+import { saveTheme } from "../redux/slice/themeSlice";
+import { saveLanguage } from "../redux/slice/languageSlice";
 import { logoutUser } from "../redux/slice/authSlice";
+import GradientBackground from "../components/GradientBackground";
 
 const ProfileScreen = () => {
   const dispatch = useDispatch();
@@ -52,11 +53,11 @@ const ProfileScreen = () => {
   };
 
   const toggleTheme = value => {
-    dispatch(setTheme(value ? "dark" : "light"));
+    dispatch(saveTheme(value ? "dark" : "light"));
   };
 
   const changeLanguage = value => {
-    dispatch(setLanguage(value));
+    dispatch(saveLanguage(value));
   };
 
   const handleLogout = () => {
@@ -65,6 +66,7 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <GradientBackground />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}

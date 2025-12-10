@@ -25,6 +25,7 @@ import * as Sharing from "expo-sharing";
 import { themes } from "../utils/themes";
 import { translations } from "../utils/translations";
 import { fetchEvents, getDownloadLink } from "../services/eventService";
+import GradientBackground from "../components/GradientBackground";
 
 const ActivitiesScreen = () => {
   const token = useSelector(state => state.auth.token);
@@ -225,6 +226,7 @@ const ActivitiesScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <GradientBackground />
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>{t.activitiesTitle}</Text>
         <Text style={[styles.subtitle, { color: colors.secondaryText }]}>

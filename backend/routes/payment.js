@@ -200,6 +200,48 @@ router.post("/callback", async (req, res) => {
       payment.paymentDetails = result;
       await payment.save();
 
+      // Etkinlik oluştur (eğer henüz oluşturulmadıysa)
+      if (!payment.event) {
+        try {
+          const QRCode = require("qrcode");
+          const crypto = require("crypto");
+
+          const uploadSlug = crypto.randomBytes(5).toString("hex");
+          const uploadUrl = `${process.env.UPLOAD_BASE_URL}/${uploadSlug}`;
+          const qrCodeImage = await QRCode.toDataURL(uploadUrl);
+          const qrCodeId = crypto.randomUUID();
+
+          const now = new Date();
+          const rentalEnd = new Date(now);
+          rentalEnd.setDate(rentalEnd.getDate() + payment.rentalDays);
+
+          const storageExpiresAt = new Date(rentalEnd);
+          storageExpiresAt.setDate(storageExpiresAt.getDate() + payment.storageDays);
+
+          const Event = require("../models/Event");
+          const event = await Event.create({
+            owner: payment.user,
+            name: `Etkinlik - ${payment._id.toString().slice(-6)}`,
+            description: "İyzico ile oluşturulan etkinlik",
+            qrCodeId,
+            uploadSlug,
+            qrCodeImage,
+            uploadUrl,
+            storagePrefix: `events/${payment.user}/${uploadSlug}`,
+            pricingPlan: `${payment.rentalPlan}_${payment.storagePlan}`,
+            rentalStart: now,
+            rentalEnd,
+            storageExpiresAt,
+            retentionDays: payment.storageDays,
+          });
+
+          payment.event = event._id;
+          await payment.save();
+        } catch (eventError) {
+          console.error("Event creation error in callback:", eventError);
+        }
+      }
+
       // Başarılı ödeme sayfasına yönlendir
       return res.redirect(`/payment-success?token=${token}`);
     } else {
@@ -269,6 +311,19 @@ router.post("/complete-event", auth, async (req, res) => {
 
       if (payment.status !== "success" && payment.amount > 0) {
         return res.status(400).json({ error: "Ödeme henüz tamamlanmadı" });
+      }
+
+      // Eğer etkinlik zaten oluşturulmuşsa, mevcut etkinliği döndür
+      if (payment.event) {
+        const Event = require("../models/Event");
+        const existingEvent = await Event.findById(payment.event);
+        if (existingEvent) {
+          return res.status(200).json({
+            success: true,
+            event: existingEvent,
+            message: "Etkinlik zaten mevcut",
+          });
+        }
       }
 
       rentalDays = payment.rentalDays;

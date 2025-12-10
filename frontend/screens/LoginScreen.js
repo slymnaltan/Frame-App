@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../redux/slice/authSlice';
 import { themes } from '../utils/themes';
 import { translations } from '../utils/translations';
+import GradientBackground from '../components/GradientBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -164,6 +165,7 @@ const LoginScreen = ({ navigation }) => {
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <GradientBackground />
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidView}

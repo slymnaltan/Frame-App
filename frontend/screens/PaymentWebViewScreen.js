@@ -15,47 +15,32 @@ const PaymentWebViewScreen = ({ route, navigation }) => {
   const themeColors = themes[currentTheme];
 
   const [loading, setLoading] = useState(true);
+  const [processed, setProcessed] = useState(false); // Çift işlemi engelle
 
   const handleNavigationStateChange = async (navState) => {
     const { url } = navState;
 
-    // Ödeme başarılı
-    if (url.includes('payment-success')) {
-      try {
-        // Etkinlik oluştur
-        const response = await axios.post(
-          `${API_URL}/payment/complete-event`,
-          {
-            conversationId,
-            eventData,
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+    // Çift işlemi engelle
+    if (processed) return;
 
-        Alert.alert(
-          currentLanguage === 'tr' ? 'Başarılı' : 'Success',
-          currentLanguage === 'tr' ? 'Ödeme tamamlandı ve etkinlik oluşturuldu!' : 'Payment completed and event created!',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
-            },
-          ]
-        );
-      } catch (error) {
-        console.error('Complete event error:', error);
-        Alert.alert(
-          currentLanguage === 'tr' ? 'Hata' : 'Error',
-          currentLanguage === 'tr' ? 'Ödeme başarılı ancak etkinlik oluşturulamadı' : 'Payment successful but event creation failed'
-        );
-        navigation.goBack();
-      }
+    // Ödeme başarılı - sadece bildirim göster, etkinlik backend'de oluşturuldu
+    if (url.includes('payment-success')) {
+      setProcessed(true);
+      Alert.alert(
+        currentLanguage === 'tr' ? 'Başarılı' : 'Success',
+        currentLanguage === 'tr' ? 'Ödeme tamamlandı ve etkinlik oluşturuldu!' : 'Payment completed and event created!',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+          },
+        ]
+      );
     }
 
     // Ödeme başarısız
     if (url.includes('payment-failed')) {
+      setProcessed(true);
       Alert.alert(
         currentLanguage === 'tr' ? 'Ödeme Başarısız' : 'Payment Failed',
         currentLanguage === 'tr' ? 'Ödeme işlemi başarısız oldu' : 'Payment process failed',

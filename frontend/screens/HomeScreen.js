@@ -18,6 +18,7 @@ import { useSelector } from "react-redux";
 import { themes } from "../utils/themes";
 import { translations } from "../utils/translations";
 import { createEvent, fetchEvents } from "../services/eventService";
+import GradientBackground from "../components/GradientBackground";
 
 const initialForm = {
   name: "",
@@ -136,6 +137,7 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <GradientBackground />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

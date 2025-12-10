@@ -1,15 +1,22 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import RootNavigator from "./routes/RootNavigator";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {store} from "./redux/store";
-import {Provider} from "react-redux";
-import { useSelector } from "react-redux";
+import {Provider, useDispatch, useSelector} from "react-redux";
 import { themes } from "./utils/themes";
+import { loadTheme } from "./redux/slice/themeSlice";
+import { loadLanguage } from "./redux/slice/languageSlice";
 
 const AppContent = () => {
+  const dispatch = useDispatch();
   const theme = useSelector(state => state.theme.theme);
   const currentTheme = themes[theme];
+
+  useEffect(() => {
+    dispatch(loadTheme());
+    dispatch(loadLanguage());
+  }, [dispatch]);
 
   const MyTheme = {
     ...DefaultTheme,
