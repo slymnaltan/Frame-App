@@ -5,10 +5,10 @@ import { useSelector } from 'react-redux';
 import { themes } from '../utils/themes';
 import axios from 'axios';
 
-import { API_BASE_URL } from '../utils/constants'; // BU DOSYADA constants OLMADIĞI İÇİN process.env KULLANACAĞIM
+// BU DOSYADA constants OLMADIĞI İÇİN process.env KULLANACAĞIM
 // Ancak constants.js'i sildiğim için burada direkt process.env kullanacağım, veya önceki adımdaki gibi API_BASE_URL tanımlayacağım.
 // Kullanıcı constants dosyasını sildirdiği için process.env kullanıyorum.
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://frame-app.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const PaymentWebViewScreen = ({ route, navigation }) => {
   const { paymentUrl, conversationId, eventData } = route.params;
@@ -57,7 +57,10 @@ const PaymentWebViewScreen = ({ route, navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainTabs' }],
+              }),
             },
           ]
         );

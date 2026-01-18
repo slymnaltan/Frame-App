@@ -120,7 +120,7 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resetEmail, securityAnswer, newPassword }),

@@ -15,7 +15,7 @@ const PRICING_PLANS = {
       name: "Başlangıç Paketi",
       rentalDays: 2,
       storageDays: 3,
-      price: 49.99, // Fiyatlar temsilidir, linkte ne tanımlıysa o çekilir aslında ama frontend'de göstermek için
+      price: 129.99, // Fiyatlar temsilidir, linkte ne tanımlıysa o çekilir aslında ama frontend'de göstermek için
       label: "2 Gün Kiralama + 3 Gün Saklama",
       features: ["2 Gün Karekod Kullanımı", "3 Gün Fotoğraf Saklama"]
     },
@@ -23,17 +23,17 @@ const PRICING_PLANS = {
       id: "standard",
       name: "Standart Paket",
       rentalDays: 4,
-      storageDays: 6,
-      price: 89.99,
-      label: "4 Gün Kiralama + 6 Gün Saklama",
-      features: ["4 Gün Karekod Kullanımı", "6 Gün Fotoğraf Saklama"]
+      storageDays: 7,
+      price: 249.99,
+      label: "4 Gün Kiralama + 7 Gün Saklama",
+      features: ["4 Gün Karekod Kullanımı", "7 Gün Fotoğraf Saklama"]
     },
     premium: {
       id: "premium",
       name: "Premium Paket",
       rentalDays: 7,
       storageDays: 10,
-      price: 149.99,
+      price: 349.99,
       label: "7 Gün Kiralama + 10 Gün Saklama",
       features: ["7 Gün Karekod Kullanımı", "10 Gün Fotoğraf Saklama"]
     }

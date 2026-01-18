@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { themes } from '../utils/themes';
 import axios from 'axios';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://frame-app.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const CreateEventScreen = ({ navigation }) => {
   const currentTheme = useSelector((state) => state.theme.theme);
@@ -94,7 +94,10 @@ const CreateEventScreen = ({ navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Home'),
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainTabs' }],
+              }),
             },
           ]
         );
