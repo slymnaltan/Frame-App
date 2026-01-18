@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  TextInput, 
-  Text, 
-  SafeAreaView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Dimensions, 
+import {
+  View,
+  TextInput,
+  Text,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -39,25 +39,25 @@ const LoginScreen = ({ navigation }) => {
 
   const t = translations[currentLanguage];
   const themeColors = themes[currentTheme];
-  
+
   const handleLogin = () => {
     dispatch(loginUser({ email, password }));
   };
-  
+
   const handleGetSecurityQuestion = async (email) => {
     if (!email || email.length < 3) {
       setSecurityQuestion('');
       return;
     }
-    
+
     try {
-      const questionResponse = await fetch('http://192.168.43.117:5000/api/auth/get-security-question', {
+      const questionResponse = await fetch(`${API_BASE_URL}/auth/get-security-question`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
       const questionData = await questionResponse.json();
-      
+
       if (questionResponse.ok) {
         setSecurityQuestion(questionData.securityQuestion);
       } else {
@@ -67,7 +67,7 @@ const LoginScreen = ({ navigation }) => {
       setSecurityQuestion('');
     }
   };
-  
+
   const handleVerifyAndContinue = async () => {
     if (!resetEmail || !securityAnswer) {
       Alert.alert(
@@ -76,16 +76,16 @@ const LoginScreen = ({ navigation }) => {
       );
       return;
     }
-    
+
     try {
       // Güvenlik cevabını doğrula
-      const verifyResponse = await fetch('http://192.168.43.117:5000/api/auth/verify-security', {
+      const verifyResponse = await fetch(`${API_BASE_URL}/auth/verify-security`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resetEmail, securityAnswer }),
       });
       const verifyData = await verifyResponse.json();
-      
+
       if (verifyResponse.ok) {
         setResetStep(2);
       } else {
@@ -101,7 +101,7 @@ const LoginScreen = ({ navigation }) => {
       );
     }
   };
-  
+
   const handleResetPassword = async () => {
     if (!newPassword || !confirmNewPassword) {
       Alert.alert(
@@ -110,7 +110,7 @@ const LoginScreen = ({ navigation }) => {
       );
       return;
     }
-    
+
     if (newPassword !== confirmNewPassword) {
       Alert.alert(
         currentLanguage === 'tr' ? 'Hata' : 'Error',
@@ -118,9 +118,9 @@ const LoginScreen = ({ navigation }) => {
       );
       return;
     }
-    
+
     try {
-      const response = await fetch('http://192.168.43.117:5000/api/auth/reset-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resetEmail, securityAnswer, newPassword }),
@@ -152,7 +152,7 @@ const LoginScreen = ({ navigation }) => {
       );
     }
   };
-  
+
   if (status === 'loading') {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
@@ -162,11 +162,11 @@ const LoginScreen = ({ navigation }) => {
       </View>
     );
   }
-  
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <GradientBackground />
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidView}
       >
@@ -179,13 +179,13 @@ const LoginScreen = ({ navigation }) => {
           <Text style={[styles.title, { color: themeColors.text }]}>
             {currentLanguage === 'tr' ? 'Giriş Yap' : 'Login'}
           </Text>
-          
+
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: themeColors.text }]}>
               {currentLanguage === 'tr' ? 'E-posta' : 'Email'}
             </Text>
             <TextInput
-              style={[styles.input, { 
+              style={[styles.input, {
                 backgroundColor: themeColors.cardBackground,
                 color: themeColors.text,
                 borderColor: themeColors.border
@@ -198,13 +198,13 @@ const LoginScreen = ({ navigation }) => {
               autoCapitalize="none"
             />
           </View>
-          
+
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: themeColors.text }]}>
               {currentLanguage === 'tr' ? 'Şifre' : 'Password'}
             </Text>
             <TextInput
-              style={[styles.input, { 
+              style={[styles.input, {
                 backgroundColor: themeColors.cardBackground,
                 color: themeColors.text,
                 borderColor: themeColors.border
@@ -216,12 +216,12 @@ const LoginScreen = ({ navigation }) => {
               onChangeText={(text) => setPassword(text)}
             />
           </View>
-          
+
           {error && (
             <Text style={[styles.errorText, { color: '#E74C3C' }]}>{error}</Text>
           )}
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             onPress={() => setShowForgotPassword(true)}
             style={styles.forgotPasswordContainer}
           >
@@ -229,22 +229,22 @@ const LoginScreen = ({ navigation }) => {
               {currentLanguage === 'tr' ? 'Şifreni mi unuttun?' : 'Forgot Password?'}
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.loginButton, { backgroundColor: themeColors.buttonBackground }]} 
+
+          <TouchableOpacity
+            style={[styles.loginButton, { backgroundColor: themeColors.buttonBackground }]}
             onPress={handleLogin}
           >
             <Text style={[styles.buttonText, { color: themeColors.buttonText }]}>
               {currentLanguage === 'tr' ? 'Giriş Yap' : 'Login'}
             </Text>
           </TouchableOpacity>
-          
+
           <Text style={[styles.orText, { color: themeColors.secondaryText }]}>
             {currentLanguage === 'tr' ? 'veya' : 'or'}
           </Text>
-          
-          <TouchableOpacity 
-            style={[styles.registerButton, { borderColor: themeColors.primary }]} 
+
+          <TouchableOpacity
+            style={[styles.registerButton, { borderColor: themeColors.primary }]}
             onPress={() => navigation.navigate("Register")}
           >
             <Text style={[styles.registerButtonText, { color: themeColors.primary }]}>
@@ -252,7 +252,7 @@ const LoginScreen = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         </View>
-        
+
         <Modal
           visible={showForgotPassword}
           transparent={false}
@@ -263,11 +263,11 @@ const LoginScreen = ({ navigation }) => {
           }}
         >
           <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={styles.modalKeyboardView}
             >
-              <ScrollView 
+              <ScrollView
                 contentContainerStyle={styles.modalScrollContent}
                 showsVerticalScrollIndicator={false}
               >
@@ -275,21 +275,21 @@ const LoginScreen = ({ navigation }) => {
                   <Text style={[styles.modalTitle, { color: themeColors.text }]}>
                     {currentLanguage === 'tr' ? 'Şifre Sıfırlama' : 'Reset Password'}
                   </Text>
-                  
+
                   {resetStep === 1 && (
                     <>
                       <Text style={[styles.modalDescription, { color: themeColors.secondaryText }]}>
-                        {currentLanguage === 'tr' 
-                          ? 'E-posta adresinizi girin ve güvenlik sorusunu cevaplayın' 
+                        {currentLanguage === 'tr'
+                          ? 'E-posta adresinizi girin ve güvenlik sorusunu cevaplayın'
                           : 'Enter your email and answer security question'}
                       </Text>
-                      
+
                       <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: themeColors.text }]}>
                           {currentLanguage === 'tr' ? 'E-posta' : 'Email'}
                         </Text>
                         <TextInput
-                          style={[styles.modalInput, { 
+                          style={[styles.modalInput, {
                             backgroundColor: themeColors.cardBackground,
                             color: themeColors.text,
                             borderColor: themeColors.border
@@ -306,7 +306,7 @@ const LoginScreen = ({ navigation }) => {
                           autoCapitalize="none"
                         />
                       </View>
-                      
+
                       {securityQuestion && (
                         <>
                           <View style={[styles.questionBox, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]}>
@@ -317,13 +317,13 @@ const LoginScreen = ({ navigation }) => {
                               {securityQuestion}
                             </Text>
                           </View>
-                          
+
                           <View style={styles.inputContainer}>
                             <Text style={[styles.label, { color: themeColors.text }]}>
                               {currentLanguage === 'tr' ? 'Cevabınız' : 'Your Answer'}
                             </Text>
                             <TextInput
-                              style={[styles.modalInput, { 
+                              style={[styles.modalInput, {
                                 backgroundColor: themeColors.cardBackground,
                                 color: themeColors.text,
                                 borderColor: themeColors.border
@@ -334,7 +334,7 @@ const LoginScreen = ({ navigation }) => {
                               onChangeText={setSecurityAnswer}
                             />
                           </View>
-                          
+
                           <TouchableOpacity
                             style={[styles.modalButton, { backgroundColor: themeColors.buttonBackground }]}
                             onPress={handleVerifyAndContinue}
@@ -347,21 +347,21 @@ const LoginScreen = ({ navigation }) => {
                       )}
                     </>
                   )}
-                  
+
                   {resetStep === 2 && (
                     <>
                       <Text style={[styles.modalDescription, { color: themeColors.secondaryText }]}>
-                        {currentLanguage === 'tr' 
-                          ? 'Yeni şifrenizi belirleyin' 
+                        {currentLanguage === 'tr'
+                          ? 'Yeni şifrenizi belirleyin'
                           : 'Set your new password'}
                       </Text>
-                      
+
                       <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: themeColors.text }]}>
                           {currentLanguage === 'tr' ? 'Yeni Şifre' : 'New Password'}
                         </Text>
                         <TextInput
-                          style={[styles.modalInput, { 
+                          style={[styles.modalInput, {
                             backgroundColor: themeColors.cardBackground,
                             color: themeColors.text,
                             borderColor: themeColors.border
@@ -373,13 +373,13 @@ const LoginScreen = ({ navigation }) => {
                           onChangeText={setNewPassword}
                         />
                       </View>
-                      
+
                       <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: themeColors.text }]}>
                           {currentLanguage === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'}
                         </Text>
                         <TextInput
-                          style={[styles.modalInput, { 
+                          style={[styles.modalInput, {
                             backgroundColor: themeColors.cardBackground,
                             color: themeColors.text,
                             borderColor: themeColors.border
@@ -391,7 +391,7 @@ const LoginScreen = ({ navigation }) => {
                           onChangeText={setConfirmNewPassword}
                         />
                       </View>
-                      
+
                       <TouchableOpacity
                         style={[styles.modalButton, { backgroundColor: themeColors.buttonBackground }]}
                         onPress={handleResetPassword}
@@ -402,7 +402,7 @@ const LoginScreen = ({ navigation }) => {
                       </TouchableOpacity>
                     </>
                   )}
-                  
+
                   <TouchableOpacity
                     style={[styles.modalCancelButton, { borderColor: themeColors.border }]}
                     onPress={() => {

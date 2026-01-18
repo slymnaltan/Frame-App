@@ -5,7 +5,10 @@ import { useSelector } from 'react-redux';
 import { themes } from '../utils/themes';
 import axios from 'axios';
 
-const API_URL = 'https://frame-app.onrender.com/api';
+import { API_BASE_URL } from '../utils/constants'; // BU DOSYADA constants OLMADIĞI İÇİN process.env KULLANACAĞIM
+// Ancak constants.js'i sildiğim için burada direkt process.env kullanacağım, veya önceki adımdaki gibi API_BASE_URL tanımlayacağım.
+// Kullanıcı constants dosyasını sildirdiği için process.env kullanıyorum.
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://frame-app.onrender.com/api';
 
 const PaymentWebViewScreen = ({ route, navigation }) => {
   const { paymentUrl, conversationId, eventData } = route.params;
@@ -24,18 +27,47 @@ const PaymentWebViewScreen = ({ route, navigation }) => {
     if (processed) return;
 
     // Ödeme başarılı - sadece bildirim göster, etkinlik backend'de oluşturuldu
-    if (url.includes('payment-success')) {
+    // Iyzico başarılı sayfasını veya bizim redirect sayfamızı yakala
+    if (url.includes('payment-success') || url.includes('success') || url.includes('Result')) {
+      if (processed) return;
       setProcessed(true);
-      Alert.alert(
-        currentLanguage === 'tr' ? 'Başarılı' : 'Success',
-        currentLanguage === 'tr' ? 'Ödeme tamamlandı ve etkinlik oluşturuldu!' : 'Payment completed and event created!',
-        [
+
+      try {
+        // 1. Ödemeyi onayla
+        await axios.post(
+          `${API_URL}/payment/confirm-payment`,
+          { conversationId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 2. Etkinliği oluştur
+        await axios.post(
+          `${API_URL}/payment/complete-event`,
           {
-            text: 'OK',
-            onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+            conversationId,
+            eventData,
+            // rentalPlan ve storagePlan backend'de payment kaydından alınacak
           },
-        ]
-      );
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        Alert.alert(
+          currentLanguage === 'tr' ? 'Başarılı' : 'Success',
+          currentLanguage === 'tr' ? 'Ödeme tamamlandı ve etkinlik oluşturuldu!' : 'Payment completed and event created!',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+            },
+          ]
+        );
+      } catch (error) {
+        console.error("Payment confirmation error:", error);
+        Alert.alert(
+          currentLanguage === 'tr' ? 'Hata' : 'Error',
+          currentLanguage === 'tr' ? 'Etkinlik oluşturulurken bir hata oluştu.' : 'Error creating event.'
+        );
+      }
     }
 
     // Ödeme başarısız

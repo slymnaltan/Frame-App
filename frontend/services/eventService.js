@@ -1,5 +1,4 @@
 import httpClient from "./httpClient";
-import { API_BASE_URL } from "../utils/constants";
 
 export const fetchEvents = () => httpClient.get("/events");
 
@@ -11,6 +10,8 @@ export const fetchEventUploads = eventId =>
 
 export const createEvent = payload => httpClient.post("/events", payload);
 
+export const deleteEvent = eventId => httpClient.delete(`/events/${eventId}`);
+
 export const getDownloadLink = (eventId, token) =>
-  `${API_BASE_URL}/download/${eventId}${token ? `?token=${token}` : ""}`;
+  `${process.env.EXPO_PUBLIC_API_URL}/download/${eventId}${token ? `?token=${token}` : ""}`;
 

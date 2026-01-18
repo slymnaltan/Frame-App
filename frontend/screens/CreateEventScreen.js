@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { themes } from '../utils/themes';
 import axios from 'axios';
 
-const API_URL = 'https://frame-app.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://frame-app.onrender.com/api';
 
 const CreateEventScreen = ({ navigation }) => {
   const currentTheme = useSelector((state) => state.theme.theme);
@@ -27,11 +27,7 @@ const CreateEventScreen = ({ navigation }) => {
   const [step, setStep] = useState(1);
   const [eventName, setEventName] = useState('');
   const [eventDescription, setEventDescription] = useState('');
-  const [rentalPlan, setRentalPlan] = useState('');
-  const [storagePlan, setStoragePlan] = useState('');
-  const [showRentalPicker, setShowRentalPicker] = useState(false);
-  const [showStoragePicker, setShowStoragePicker] = useState(false);
-  const [pricing, setPricing] = useState(null);
+  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [pricingPlans, setPricingPlans] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -39,37 +35,14 @@ const CreateEventScreen = ({ navigation }) => {
     fetchPricingPlans();
   }, []);
 
-  useEffect(() => {
-    if (pricingPlans) {
-      calculateTotalPrice();
-    }
-  }, [rentalPlan, storagePlan, pricingPlans]);
-
   const fetchPricingPlans = async () => {
     try {
       const response = await axios.get(`${API_URL}/payment/pricing`);
-      setPricingPlans(response.data);
+      // response.data artık { PACKAGES: { ... } } dönüyor
+      setPricingPlans(response.data.PACKAGES);
     } catch (error) {
       console.error('Pricing fetch error:', error);
     }
-  };
-
-  const calculateTotalPrice = () => {
-    if (!pricingPlans || !rentalPlan || !storagePlan) {
-      setPricing(null);
-      return;
-    }
-
-    const rental = pricingPlans.rental[rentalPlan];
-    const storage = pricingPlans.storage[storagePlan];
-
-    setPricing({
-      rentalPrice: rental.price,
-      storagePrice: storage.price,
-      totalPrice: rental.price + storage.price,
-      rentalLabel: rental.label,
-      storageLabel: storage.label,
-    });
   };
 
   const handleContinue = () => {
@@ -84,10 +57,10 @@ const CreateEventScreen = ({ navigation }) => {
   };
 
   const handleCreateEvent = async () => {
-    if (!rentalPlan || !storagePlan) {
+    if (!selectedPlanId) {
       Alert.alert(
         currentLanguage === 'tr' ? 'Hata' : 'Error',
-        currentLanguage === 'tr' ? 'Lütfen kiralama ve saklama sürelerini seçin' : 'Please select rental and storage durations'
+        currentLanguage === 'tr' ? 'Lütfen bir paket seçin' : 'Please select a package'
       );
       return;
     }
@@ -99,15 +72,16 @@ const CreateEventScreen = ({ navigation }) => {
         description: eventDescription,
       };
 
-      if (pricing && pricing.totalPrice === 0) {
+      const selectedPlan = pricingPlans[selectedPlanId];
+
+      if (selectedPlan && selectedPlan.price === 0) {
         // Ücretsiz plan - direkt etkinlik oluştur
         const response = await axios.post(
           `${API_URL}/payment/complete-event`,
           {
             conversationId: `free-${Date.now()}`,
             eventData,
-            rentalPlan,
-            storagePlan,
+            planId: selectedPlanId,
           },
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -129,8 +103,7 @@ const CreateEventScreen = ({ navigation }) => {
         const response = await axios.post(
           `${API_URL}/payment/initialize`,
           {
-            rentalPlan,
-            storagePlan,
+            planId: selectedPlanId,
             eventData,
           },
           {
@@ -224,81 +197,37 @@ const CreateEventScreen = ({ navigation }) => {
 
         {step === 2 && (
           <View style={styles.stepContainer}>
-            <View style={styles.inputContainer}>
-              <Text style={[styles.label, { color: themeColors.text }]}>
-                {currentLanguage === 'tr' ? 'Kiralama Süresi' : 'Rental Duration'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.picker, {
-                  backgroundColor: themeColors.cardBackground,
-                  borderColor: themeColors.border,
-                }]}
-                onPress={() => setShowRentalPicker(true)}
-              >
-                <Text style={[styles.pickerText, { color: rentalPlan ? themeColors.text : themeColors.secondaryText }]}>
-                  {rentalPlan ? pricingPlans.rental[rentalPlan].label : (currentLanguage === 'tr' ? 'Seçiniz' : 'Select')}
-                </Text>
-                <Feather name="chevron-down" size={20} color={themeColors.secondaryText} />
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+              {currentLanguage === 'tr' ? 'Paket Seçimi' : 'Select Package'}
+            </Text>
 
-            <View style={styles.inputContainer}>
-              <Text style={[styles.label, { color: themeColors.text }]}>
-                {currentLanguage === 'tr' ? 'Saklama Süresi' : 'Storage Duration'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.picker, {
-                  backgroundColor: themeColors.cardBackground,
-                  borderColor: themeColors.border,
-                }]}
-                onPress={() => setShowStoragePicker(true)}
-              >
-                <Text style={[styles.pickerText, { color: storagePlan ? themeColors.text : themeColors.secondaryText }]}>
-                  {storagePlan ? pricingPlans.storage[storagePlan].label : (currentLanguage === 'tr' ? 'Seçiniz' : 'Select')}
-                </Text>
-                <Feather name="chevron-down" size={20} color={themeColors.secondaryText} />
-              </TouchableOpacity>
-            </View>
-
-            {pricing && (
-              <View style={[styles.invoiceContainer, {
-                backgroundColor: themeColors.cardBackground,
-                borderColor: themeColors.border,
-              }]}>
-                <Text style={[styles.invoiceTitle, { color: themeColors.text }]}>
-                  {currentLanguage === 'tr' ? 'Fatura Özeti' : 'Invoice Summary'}
-                </Text>
-
-                <View style={styles.invoiceRow}>
-                  <Text style={[styles.invoiceLabel, { color: themeColors.secondaryText }]}>
-                    {currentLanguage === 'tr' ? 'Kiralama:' : 'Rental:'}
+            {Object.keys(pricingPlans).map((key) => {
+              const plan = pricingPlans[key];
+              const isSelected = selectedPlanId === key;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.packageCard, {
+                    backgroundColor: isSelected ? themeColors.primary + '15' : themeColors.cardBackground,
+                    borderColor: isSelected ? themeColors.primary : themeColors.border,
+                    borderWidth: isSelected ? 2 : 1,
+                  }]}
+                  onPress={() => setSelectedPlanId(key)}
+                >
+                  <View style={styles.packageHeader}>
+                    <Text style={[styles.packageName, { color: themeColors.text, fontWeight: isSelected ? 'bold' : '600' }]}>
+                      {plan.name}
+                    </Text>
+                    <Text style={[styles.packagePrice, { color: plan.price === 0 ? '#4CAF50' : themeColors.primary }]}>
+                      {plan.price === 0 ? (currentLanguage === 'tr' ? 'Ücretsiz' : 'Free') : `₺${plan.price}`}
+                    </Text>
+                  </View>
+                  <Text style={[styles.packageLabel, { color: themeColors.secondaryText }]}>
+                    {plan.label}
                   </Text>
-                  <Text style={[styles.invoiceValue, { color: themeColors.text }]}>
-                    {pricing.rentalPrice === 0 ? (currentLanguage === 'tr' ? 'Ücretsiz' : 'Free') : `₺${pricing.rentalPrice.toFixed(2)}`}
-                  </Text>
-                </View>
-
-                <View style={styles.invoiceRow}>
-                  <Text style={[styles.invoiceLabel, { color: themeColors.secondaryText }]}>
-                    {currentLanguage === 'tr' ? 'Saklama:' : 'Storage:'}
-                  </Text>
-                  <Text style={[styles.invoiceValue, { color: themeColors.text }]}>
-                    {pricing.storagePrice === 0 ? (currentLanguage === 'tr' ? 'Ücretsiz' : 'Free') : `₺${pricing.storagePrice.toFixed(2)}`}
-                  </Text>
-                </View>
-
-                <View style={[styles.invoiceDivider, { backgroundColor: themeColors.border }]} />
-
-                <View style={styles.invoiceRow}>
-                  <Text style={[styles.invoiceTotalLabel, { color: themeColors.text }]}>
-                    {currentLanguage === 'tr' ? 'Toplam:' : 'Total:'}
-                  </Text>
-                  <Text style={[styles.invoiceTotalValue, { color: themeColors.primary }]}>
-                    {pricing.totalPrice === 0 ? (currentLanguage === 'tr' ? 'Ücretsiz' : 'Free') : `₺${pricing.totalPrice.toFixed(2)}`}
-                  </Text>
-                </View>
-              </View>
-            )}
+                </TouchableOpacity>
+              );
+            })}
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -319,7 +248,7 @@ const CreateEventScreen = ({ navigation }) => {
                   <ActivityIndicator size="small" color={themeColors.buttonText} />
                 ) : (
                   <Text style={[styles.buttonText, { color: themeColors.buttonText }]}>
-                    {pricing && pricing.totalPrice > 0
+                    {selectedPlanId && pricingPlans[selectedPlanId].price > 0
                       ? (currentLanguage === 'tr' ? 'Öde ve Oluştur' : 'Pay & Create')
                       : (currentLanguage === 'tr' ? 'Oluştur' : 'Create')}
                   </Text>
@@ -329,104 +258,6 @@ const CreateEventScreen = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
-
-      {/* Rental Plan Picker Modal */}
-      <Modal
-        visible={showRentalPicker}
-        transparent={false}
-        animationType="slide"
-        onRequestClose={() => setShowRentalPicker(false)}
-      >
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: themeColors.text }]}>
-              {currentLanguage === 'tr' ? 'Kiralama Süresi Seçin' : 'Select Rental Duration'}
-            </Text>
-          </View>
-          <ScrollView>
-            {Object.keys(pricingPlans.rental).map((key) => {
-              const plan = pricingPlans.rental[key];
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.planOption, {
-                    backgroundColor: rentalPlan === key ? themeColors.primary + '20' : themeColors.cardBackground,
-                    borderColor: rentalPlan === key ? themeColors.primary : themeColors.border,
-                  }]}
-                  onPress={() => {
-                    setRentalPlan(key);
-                    setShowRentalPicker(false);
-                  }}
-                >
-                  <Text style={[styles.planLabel, { color: themeColors.text }]}>
-                    {plan.label}
-                  </Text>
-                  <Text style={[styles.planPrice, { color: plan.price === 0 ? '#4CAF50' : themeColors.primary }]}>
-                    {plan.price === 0 ? (currentLanguage === 'tr' ? 'Ücretsiz' : 'Free') : `₺${plan.price.toFixed(2)}`}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          <TouchableOpacity
-            style={[styles.modalCloseButton, { backgroundColor: themeColors.border }]}
-            onPress={() => setShowRentalPicker(false)}
-          >
-            <Text style={[styles.modalCloseButtonText, { color: themeColors.text }]}>
-              {currentLanguage === 'tr' ? 'Kapat' : 'Close'}
-            </Text>
-          </TouchableOpacity>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Storage Plan Picker Modal */}
-      <Modal
-        visible={showStoragePicker}
-        transparent={false}
-        animationType="slide"
-        onRequestClose={() => setShowStoragePicker(false)}
-      >
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: themeColors.text }]}>
-              {currentLanguage === 'tr' ? 'Saklama Süresi Seçin' : 'Select Storage Duration'}
-            </Text>
-          </View>
-          <ScrollView>
-            {Object.keys(pricingPlans.storage).map((key) => {
-              const plan = pricingPlans.storage[key];
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.planOption, {
-                    backgroundColor: storagePlan === key ? themeColors.primary + '20' : themeColors.cardBackground,
-                    borderColor: storagePlan === key ? themeColors.primary : themeColors.border,
-                  }]}
-                  onPress={() => {
-                    setStoragePlan(key);
-                    setShowStoragePicker(false);
-                  }}
-                >
-                  <Text style={[styles.planLabel, { color: themeColors.text }]}>
-                    {plan.label}
-                  </Text>
-                  <Text style={[styles.planPrice, { color: plan.price === 0 ? '#4CAF50' : themeColors.primary }]}>
-                    {plan.price === 0 ? (currentLanguage === 'tr' ? 'Ücretsiz' : 'Free') : `₺${plan.price.toFixed(2)}`}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          <TouchableOpacity
-            style={[styles.modalCloseButton, { backgroundColor: themeColors.border }]}
-            onPress={() => setShowStoragePicker(false)}
-          >
-            <Text style={[styles.modalCloseButtonText, { color: themeColors.text }]}>
-              {currentLanguage === 'tr' ? 'Kapat' : 'Close'}
-            </Text>
-          </TouchableOpacity>
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -475,52 +306,31 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  picker: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pickerText: {
-    fontSize: 15,
-    flex: 1,
-  },
-  invoiceContainer: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  invoiceTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
   },
-  invoiceRow: {
+  packageCard: {
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+  },
+  packageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginBottom: 5,
   },
-  invoiceLabel: {
-    fontSize: 14,
+  packageName: {
+    fontSize: 16,
   },
-  invoiceValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  invoiceDivider: {
-    height: 1,
-    marginVertical: 15,
-  },
-  invoiceTotalLabel: {
+  packagePrice: {
     fontSize: 16,
     fontWeight: 'bold',
   },
-  invoiceTotalValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  packageLabel: {
+    fontSize: 14,
   },
   button: {
     paddingVertical: 12,
@@ -536,6 +346,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 10,
   },
   backButton: {
     flex: 1,
@@ -557,47 +368,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 45,
     justifyContent: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-  },
-  modalHeader: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  planOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    marginHorizontal: 15,
-    marginVertical: 5,
-    borderRadius: 8,
-    borderWidth: 2,
-  },
-  planLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  planPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  modalCloseButton: {
-    margin: 15,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalCloseButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
 

@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "https://frame-app.onrender.com/api/auth";
+const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/auth`;
 
 // REGISTER
 export const registerUser = createAsyncThunk("auth/registerUser", async (userData, { rejectWithValue }) => {

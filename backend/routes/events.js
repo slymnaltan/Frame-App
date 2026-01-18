@@ -127,5 +127,31 @@ router.get("/:id/uploads", auth, async (req, res) => {
   }
 });
 
+// Etkinlik silme
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const event = await Event.findOne({
+      _id: req.params.id,
+      owner: req.userId,
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Etkinlik bulunamadı" });
+    }
+
+    // Etkinliği sil
+    await Event.findByIdAndDelete(req.params.id);
+
+    // İlgili upload'ları da sil (opsiyonel)
+    const Upload = require("../models/Upload");
+    await Upload.deleteMany({ event: req.params.id });
+
+    res.json({ message: "Etkinlik başarıyla silindi" });
+  } catch (error) {
+    console.error("Event delete error:", error);
+    res.status(500).json({ error: "Etkinlik silinemedi" });
+  }
+});
+
 module.exports = router;
 

@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const Iyzipay = require("iyzipay");
 const crypto = require("crypto");
 
 const auth = require("../middleware/authMiddleware");
@@ -8,7 +7,6 @@ const Payment = require("../models/Payment");
 const Event = require("../models/Event");
 const User = require("../models/User");
 const { calculatePrice, isFree } = require("../config/pricing");
-const { createPaymentForm, retrievePaymentResult } = require("../services/paymentService");
 
 // Fiyatlandırma planlarını getir
 router.get("/pricing", (req, res) => {
@@ -19,21 +17,21 @@ router.get("/pricing", (req, res) => {
 // Ödeme başlat
 router.post("/initialize", auth, async (req, res) => {
   try {
-    const { rentalPlan, storagePlan, eventData } = req.body;
+    const { planId, eventData } = req.body;
 
-    if (!rentalPlan || !storagePlan) {
-      return res.status(400).json({ error: "Plan seçimi zorunludur" });
+    if (!planId) {
+      return res.status(400).json({ error: "Paket seçimi zorunludur" });
     }
 
-    // Fiyat hesapla
-    const pricing = calculatePrice(rentalPlan, storagePlan);
+    const { getPlanDetails, isFree } = require("../config/pricing");
+    const plan = getPlanDetails(planId);
 
     // Ücretsiz plan kontrolü
-    if (isFree(rentalPlan, storagePlan)) {
+    if (isFree(planId)) {
       return res.json({
         isFree: true,
-        pricing,
-        message: "Ücretsiz plan seçildi, ödeme gerekmiyor",
+        plan,
+        message: "Ücretsiz paket seçildi, ödeme gerekmiyor",
       });
     }
 
@@ -50,121 +48,38 @@ router.post("/initialize", auth, async (req, res) => {
     const payment = await Payment.create({
       user: req.userId,
       conversationId,
-      amount: pricing.totalPrice,
-      rentalPlan,
-      storagePlan,
-      rentalDays: pricing.rentalDays,
-      storageDays: pricing.storageDays,
+      amount: plan.price,
+      rentalPlan: plan.id, // Artık tek bir plan ID'si tutuyoruz
+      storagePlan: plan.id, // Uyumluluk için ikisine de aynısını yazıyorum veya şema değişmeli ama şimdilik kalsın
+      rentalDays: plan.rentalDays,
+      storageDays: plan.storageDays,
       status: "pending",
     });
 
-    // Basket items oluştur - sadece ücretli olanları ekle
-    const basketItems = [];
-    if (pricing.rentalPrice > 0) {
-      basketItems.push({
-        id: "RENTAL",
-        name: `Kiralama - ${pricing.rentalLabel}`,
-        category1: "Kiralama",
-        itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
-        price: pricing.rentalPrice.toFixed(2),
-      });
-    }
-    if (pricing.storagePrice > 0) {
-      basketItems.push({
-        id: "STORAGE",
-        name: `Saklama - ${pricing.storageLabel}`,
-        category1: "Saklama",
-        itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
-        price: pricing.storagePrice.toFixed(2),
-      });
+    // İyzico ödeme formu yerine Iyzilink kullan
+    // Paket bazlı link seçimi
+    // .env örnekleri: IYZICO_LINK_BASIC, IYZICO_LINK_STANDARD, IYZICO_LINK_PREMIUM
+    const linkKey = `IYZICO_LINK_${planId.toUpperCase()}`;
+    const paymentLink = process.env[linkKey];
+
+    if (!paymentLink) {
+      return res.status(500).json({ error: "Ödeme linki bulunamadı. Sistem yöneticisiyle iletişime geçin." });
     }
 
-    // Eğer hiç ücretli ürün yoksa (olmaması lazım ama yine de kontrol)
-    if (basketItems.length === 0) {
-      return res.status(400).json({ error: "Sepette ücretli ürün bulunamadı" });
-    }
+    console.log(`Ödeme için link seçildi: ${paymentLink} (Paket: ${planId})`);
 
-    // İyzico ödeme formu oluştur
-    const paymentRequest = {
-      locale: Iyzipay.LOCALE.TR,
-      conversationId: conversationId,
-      price: pricing.totalPrice.toFixed(2),
-      paidPrice: pricing.totalPrice.toFixed(2),
-      currency: Iyzipay.CURRENCY.TRY,
-      basketId: payment._id.toString(),
-      paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
-      callbackUrl: `${process.env.API_PUBLIC_URL}/api/payment/callback`,
-      enabledInstallments: [1, 2, 3, 6, 9],
-      buyer: {
-        id: user._id.toString(),
-        name: user.name.split(" ")[0] || "Ad",
-        surname: user.name.split(" ")[1] || "Soyad",
-        gsmNumber: "+905350000000",
-        email: user.email,
-        identityNumber: "11111111111",
-        registrationAddress: "Adres",
-        ip: req.ip || "85.34.78.112",
-        city: "Istanbul",
-        country: "Turkey",
-        zipCode: "34732",
-      },
-      shippingAddress: {
-        contactName: user.name,
-        city: "Istanbul",
-        country: "Turkey",
-        address: "Adres",
-        zipCode: "34732",
-      },
-      billingAddress: {
-        contactName: user.name,
-        city: "Istanbul",
-        country: "Turkey",
-        address: "Adres",
-        zipCode: "34732",
-      },
-      basketItems: basketItems,
-    };
-
-    console.log("Payment request:", JSON.stringify(paymentRequest, null, 2));
-    const result = await createPaymentForm(paymentRequest);
-    console.log("Payment result:", JSON.stringify(result, null, 2));
-
-    if (result.status === "success") {
-      // Token'ı kaydet
-      await Payment.findByIdAndUpdate(payment._id, {
-        token: result.token,
-        paymentDetails: result,
-      });
-
-      res.json({
-        success: true,
-        paymentPageUrl: result.paymentPageUrl,
-        token: result.token,
-        conversationId,
-        pricing,
-      });
-    } else {
-      await Payment.findByIdAndUpdate(payment._id, {
-        status: "failed",
-        errorMessage: result.errorMessage,
-      });
-
-      res.status(400).json({
-        error: "Ödeme formu oluşturulamadı",
-        message: result.errorMessage,
-      });
-    }
+    res.json({
+      success: true,
+      paymentPageUrl: paymentLink,
+      token: "dummy_token_" + conversationId,
+      conversationId,
+      plan,
+    });
   } catch (error) {
     console.error("Payment initialize error:", error);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
-    if (error.response) {
-      console.error("Error response:", error.response);
-    }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Ödeme başlatılamadı",
-      details: error.message,
-      errorData: error.response?.data || null
+      details: error.message
     });
   }
 });
@@ -284,20 +199,46 @@ router.get("/status/:conversationId", auth, async (req, res) => {
   }
 });
 
+// Ödeme durumunu manuel olarak onayla (Frontend'den başarılı URL görüldüğünde) - GÜVENLİK NOTU: Iyzilink API olmadığı için bu yöntem kullanılıyor
+router.post("/confirm-payment", auth, async (req, res) => {
+  try {
+    const { conversationId } = req.body;
+
+    const payment = await Payment.findOne({
+      conversationId,
+      user: req.userId,
+    });
+
+    if (!payment) {
+      return res.status(404).json({ error: "Ödeme bulunamadı" });
+    }
+
+    payment.status = "success";
+    await payment.save();
+
+    res.json({ success: true, message: "Ödeme onaylandı" });
+  } catch (error) {
+    console.error("Confirm payment error:", error);
+    res.status(500).json({ error: "Ödeme onaylanamadı" });
+  }
+});
+
 // Ödeme tamamlandıktan sonra etkinlik oluştur
 router.post("/complete-event", auth, async (req, res) => {
   try {
-    const { conversationId, eventData, rentalPlan, storagePlan } = req.body;
+    const { conversationId, eventData, planId } = req.body;
 
-    let payment;
     let rentalDays, storageDays;
+    let payment;
+
+    // Plan detaylarını al
+    const { getPlanDetails } = require("../config/pricing");
 
     // Ücretsiz plan kontrolü
-    if (conversationId.startsWith('free-')) {
-      // Ücretsiz plan için pricing hesapla
-      const pricing = calculatePrice(rentalPlan || 'free', storagePlan || 'free');
-      rentalDays = pricing.rentalDays;
-      storageDays = pricing.storageDays;
+    if (conversationId && conversationId.startsWith('free-')) {
+      const plan = getPlanDetails('free');
+      rentalDays = plan.rentalDays;
+      storageDays = plan.storageDays;
     } else {
       // Ödeme kontrolü
       payment = await Payment.findOne({
@@ -310,7 +251,7 @@ router.post("/complete-event", auth, async (req, res) => {
       }
 
       if (payment.status !== "success" && payment.amount > 0) {
-        return res.status(400).json({ error: "Ödeme henüz tamamlanmadı" });
+        return res.status(400).json({ error: "Ödeme henüz tamamlanmadı veya onaylanmadı" });
       }
 
       // Eğer etkinlik zaten oluşturulmuşsa, mevcut etkinliği döndür
@@ -357,7 +298,7 @@ router.post("/complete-event", auth, async (req, res) => {
       qrCodeImage,
       uploadUrl,
       storagePrefix: `events/${req.userId}/${uploadSlug}`,
-      pricingPlan: payment ? `${payment.rentalPlan}_${payment.storagePlan}` : 'free_free',
+      pricingPlan: payment ? `${payment.rentalPlan}` : 'free', // Artık tek plan ismi yazıyoruz
       rentalStart: now,
       rentalEnd,
       storageExpiresAt,

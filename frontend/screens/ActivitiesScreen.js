@@ -24,7 +24,7 @@ import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { themes } from "../utils/themes";
 import { translations } from "../utils/translations";
-import { fetchEvents, getDownloadLink } from "../services/eventService";
+import { fetchEvents, getDownloadLink, deleteEvent } from "../services/eventService";
 import GradientBackground from "../components/GradientBackground";
 
 const ActivitiesScreen = () => {
@@ -178,6 +178,38 @@ const ActivitiesScreen = () => {
     }
   };
 
+  const handleDeleteEvent = async (event) => {
+    Alert.alert(
+      language === 'tr' ? 'Etkinliği Sil' : 'Delete Event',
+      language === 'tr' 
+        ? `"${event.name}" etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
+        : `Are you sure you want to delete "${event.name}"? This action cannot be undone.`,
+      [
+        {
+          text: language === 'tr' ? 'İptal' : 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: language === 'tr' ? 'Sil' : 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEvent(event._id);
+              Alert.alert(
+                'Memory',
+                language === 'tr' ? 'Etkinlik başarıyla silindi' : 'Event deleted successfully'
+              );
+              loadEvents(); // Listeyi yenile
+            } catch (error) {
+              console.error('Delete event error:', error);
+              Alert.alert('Memory', t.errorOccurred);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item }) => {
     const isActive =
       item.rentalEnd ? new Date(item.rentalEnd) > new Date() : true;
@@ -218,6 +250,13 @@ const ActivitiesScreen = () => {
             colors={colors}
             onPress={() => handleDownload(item)}
             disabled={!canDownload}
+          />
+          <ActionButton
+            icon="trash-2"
+            label={language === 'tr' ? 'Sil' : 'Delete'}
+            colors={colors}
+            onPress={() => handleDeleteEvent(item)}
+            isDelete={true}
           />
         </View>
       </View>
@@ -354,17 +393,20 @@ const ActivitiesScreen = () => {
   );
 };
 
-const ActionButton = ({ icon, label, colors, onPress, disabled }) => (
+const ActionButton = ({ icon, label, colors, onPress, disabled, isDelete }) => (
   <TouchableOpacity
     style={[
       styles.actionBtn,
-      { borderColor: colors.border, opacity: disabled ? 0.4 : 1 },
+      { 
+        borderColor: isDelete ? colors.danger : colors.border, 
+        opacity: disabled ? 0.4 : 1 
+      },
     ]}
     onPress={disabled ? undefined : onPress}
     disabled={disabled}
   >
-    <Feather name={icon} size={16} color={colors.primary} />
-    <Text style={[styles.actionText, { color: colors.primary }]}>{label}</Text>
+    <Feather name={icon} size={16} color={isDelete ? colors.danger : colors.primary} />
+    <Text style={[styles.actionText, { color: isDelete ? colors.danger : colors.primary }]}>{label}</Text>
   </TouchableOpacity>
 );
 
@@ -432,13 +474,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 16,
+    gap: 8,
   },
   actionBtn: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 10,
-    marginHorizontal: 4,
+    paddingHorizontal: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
