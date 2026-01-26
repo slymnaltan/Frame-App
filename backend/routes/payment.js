@@ -59,11 +59,12 @@ router.post("/initialize", auth, async (req, res) => {
     // Shopier ödeme linki kullan
     // Paket bazlı link seçimi
     // .env örnekleri: SHOPIER_LINK_BASIC, SHOPIER_LINK_STANDARD, SHOPIER_LINK_PREMIUM
-    const linkKey = `SHOPIER_LINK_${planId.toUpperCase()}`;
+    const linkKey = `SHOPIER_LINK_${planId.trim().toUpperCase()}`;
     const paymentLink = process.env[linkKey];
 
     if (!paymentLink) {
-      return res.status(500).json({ error: "Ödeme linki bulunamadı. Sistem yöneticisiyle iletişime geçin." });
+      console.error(`Ödeme linki bulunamadı! Plan: ${planId}, Aranan Key: ${linkKey}, Env Değeri: ${process.env[linkKey]}`);
+      return res.status(500).json({ error: "Ödeme linki konfigürasyonu eksik. Lütfen sunucuyu yeniden başlatın (restart server)." });
     }
 
     console.log(`Ödeme için link seçildi: ${paymentLink} (Paket: ${planId})`);

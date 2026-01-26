@@ -139,10 +139,10 @@ const ActivitiesScreen = () => {
       `;
 
       const { uri } = await Print.printToFileAsync({ html });
-      
+
       const fileName = `QR-${selectedEvent.name?.replace(/[^a-z0-9]/gi, "_") || "event"}-${selectedEvent._id}.pdf`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      
+
       await FileSystem.moveAsync({
         from: uri,
         to: fileUri,
@@ -181,7 +181,7 @@ const ActivitiesScreen = () => {
   const handleDeleteEvent = async (event) => {
     Alert.alert(
       language === 'tr' ? 'Etkinliği Sil' : 'Delete Event',
-      language === 'tr' 
+      language === 'tr'
         ? `"${event.name}" etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
         : `Are you sure you want to delete "${event.name}"? This action cannot be undone.`,
       [
@@ -214,7 +214,9 @@ const ActivitiesScreen = () => {
     const isActive =
       item.rentalEnd ? new Date(item.rentalEnd) > new Date() : true;
     const canDownload =
-      item.rentalEnd ? new Date(item.rentalEnd) <= new Date() : false;
+      item.rentalEnd
+        ? new Date(item.rentalEnd) <= new Date() && (!item.storageExpiresAt || new Date(item.storageExpiresAt) > new Date())
+        : false;
     return (
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.cardHeader}>
@@ -397,9 +399,9 @@ const ActionButton = ({ icon, label, colors, onPress, disabled, isDelete }) => (
   <TouchableOpacity
     style={[
       styles.actionBtn,
-      { 
-        borderColor: isDelete ? colors.danger : colors.border, 
-        opacity: disabled ? 0.4 : 1 
+      {
+        borderColor: isDelete ? colors.danger : colors.border,
+        opacity: disabled ? 0.4 : 1
       },
     ]}
     onPress={disabled ? undefined : onPress}
