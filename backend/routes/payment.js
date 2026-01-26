@@ -56,10 +56,10 @@ router.post("/initialize", auth, async (req, res) => {
       status: "pending",
     });
 
-    // İyzico ödeme formu yerine Iyzilink kullan
+    // Shopier ödeme linki kullan
     // Paket bazlı link seçimi
-    // .env örnekleri: IYZICO_LINK_BASIC, IYZICO_LINK_STANDARD, IYZICO_LINK_PREMIUM
-    const linkKey = `IYZICO_LINK_${planId.toUpperCase()}`;
+    // .env örnekleri: SHOPIER_LINK_BASIC, SHOPIER_LINK_STANDARD, SHOPIER_LINK_PREMIUM
+    const linkKey = `SHOPIER_LINK_${planId.toUpperCase()}`;
     const paymentLink = process.env[linkKey];
 
     if (!paymentLink) {
@@ -137,7 +137,7 @@ router.post("/callback", async (req, res) => {
           const event = await Event.create({
             owner: payment.user,
             name: `Etkinlik - ${payment._id.toString().slice(-6)}`,
-            description: "İyzico ile oluşturulan etkinlik",
+            description: "Shopier ile oluşturulan etkinlik",
             qrCodeId,
             uploadSlug,
             qrCodeImage,
@@ -199,7 +199,7 @@ router.get("/status/:conversationId", auth, async (req, res) => {
   }
 });
 
-// Ödeme durumunu manuel olarak onayla (Frontend'den başarılı URL görüldüğünde) - GÜVENLİK NOTU: Iyzilink API olmadığı için bu yöntem kullanılıyor
+// Ödeme durumunu manuel olarak onayla (Frontend'den başarılı URL görüldüğünde) - GÜVENLİK NOTU: Shopier API entegrasyonu olmadığı için bu yöntem kullanılıyor
 router.post("/confirm-payment", auth, async (req, res) => {
   try {
     const { conversationId } = req.body;

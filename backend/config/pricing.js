@@ -5,10 +5,10 @@ const PRICING_PLANS = {
       id: "free",
       name: "Deneme Paketi",
       rentalDays: 1,
-      storageDays: 2,
+      storageDays: 1,
       price: 0,
-      label: "1 Gün Kiralama + 2 Gün Saklama (Ücretsiz)",
-      features: ["1 Gün Karekod Kullanımı", "2 Gün Fotoğraf Saklama"]
+      label: "1 Gün Kiralama + 1 Gün Saklama (Ücretsiz)",
+      features: ["1 Gün Karekod Kullanımı", "1 Gün Fotoğraf Saklama"]
     },
     basic: {
       id: "basic",
