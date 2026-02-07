@@ -17,6 +17,7 @@ const eventSchema = new mongoose.Schema(
     rentalEnd: { type: Date },
     storageExpiresAt: { type: Date },
     retentionDays: { type: Number, default: 30 },
+    isFilesDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -31,12 +31,12 @@ const isSupabaseReady =
 
 const s3Client = isS3Ready
   ? new S3Client({
-      region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    })
+    region,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  })
   : null;
 
 const supabaseClient = isSupabaseReady
@@ -164,11 +164,50 @@ async function listFiles(prefix) {
   throw new Error("List files is only supported with Supabase storage in this setup");
 }
 
+async function deleteFolder(prefix) {
+  // 1. Safety Check: Boş veya kök dizin kontrolü
+  if (!prefix || prefix.trim() === "" || prefix === "/" || !prefix.includes("/")) {
+    throw new Error(`DANGER: Unsafe delete operation prevented for prefix: '${prefix}'. Path must contain at least one subdirectory.`);
+  }
+
+  console.log(`[Storage] Deleting folder: ${prefix}`);
+
+  if (supabaseClient) {
+    // 2. Dosyaları listele
+    const files = await listFiles(prefix);
+
+    if (!files || files.length === 0) {
+      console.log(`[Storage] No files found in ${prefix}`);
+      return { count: 0 };
+    }
+
+    const filesToDelete = files.map(f => f.name); // Supabase remove metodu, o klasörün içindeki dosya isimlerini bekler (prefix/file değil, sadece file name mi? Yoksa full path mi? Supabase dökümantasyonuna göre bu metot genellikle dosya isimleri dizisi alır ama klasör bağlamında. Ancak biz garanti olsun diye full path (key) kullanırsak ve bucket rootundan silersek daha iyi olabilir. AMA `from(bucket).remove([ 'folder/file.png' ])` çalışır.
+    // Düzeltme: Supabase 'remove' metodu full path (key) listesi bekler.
+    const keysToDelete = files.map(f => f.key || `${prefix}/${f.name}`);
+
+    // 3. Dosyaları sil
+    const { data, error } = await supabaseClient.storage
+      .from(supabaseBucket)
+      .remove(keysToDelete);
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(`[Storage] Successfully deleted ${keysToDelete.length} files from ${prefix}`);
+    return { count: keysToDelete.length, deleted: keysToDelete };
+  }
+
+  // S3 ve Local için implementasyon gerekirse buraya eklenebilir
+  throw new Error("Delete folder is currently only supported with Supabase storage");
+}
+
 module.exports = {
   uploadFile,
   getFileStream,
   isS3Ready,
   isSupabaseReady,
   listFiles,
+  deleteFolder,
 };
 
